@@ -1,14 +1,15 @@
 import numpy as np
 import math
 import random
+import os
 from PIL import Image
 
-MAX_ITERATIONS = 1000
+MAX_ITERATIONS = 50
 
 def find_clusters(data):
     iterations = 0
    
-    num_clusters = np.random.randint(low=1, high=6, size=1)
+    num_clusters = np.random.randint(low=30, high=50, size=1)
     print 'num_clusters: ' + str(num_clusters)
     
     previous_centers = []
@@ -16,8 +17,8 @@ def find_clusters(data):
     
     while not (converged(previous_centers, centers, iterations)):
         iterations += 1
-        if iterations % 50 == 0:
-            print 'iterations: ' + str(iterations)
+        #if iterations % 50 == 0:
+        print 'iterations: ' + str(iterations)
     
         clusters = [[] for i in range(num_clusters)]
         
@@ -87,8 +88,27 @@ def find_closest_cluster(data, centers, clusters):
     
     return clusters
 
+# generate 5 random indexes from folder
+def Rand(folder, num):
+    start = 0
+    end = len(os.listdir(folder))
+    res = []
+    for j in range(num):
+        res.append(random.randint(start, end))
+    return res
+
+
 folder = 'images'
-file = '0small_image.jpg'
-im = Image.open(folder + '/' + file)
-pixels = list(im.getdata())
+filenames = os.listdir(folder)
+
+# get 3 random pictures to use for clustering
+positions = Rand(folder, 3)
+pixels = []
+
+for pos in positions:
+    # loading image
+    im = Image.open(folder + '/' + filenames[pos])
+    pixels.extend(list(im.getdata()))
+
 find_clusters(pixels)
+
