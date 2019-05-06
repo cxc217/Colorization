@@ -136,11 +136,10 @@ def Rand(folder, num):
 folder = 'images'
 '''
 # write centers of clusters to file so we dont have to do this everytime
-
 filenames = os.listdir(folder)
 
-# get 3 random pictures to use for clustering
-positions = Rand(folder, 3)
+# get 15 random pictures to use for clustering
+positions = Rand(folder, 15)
 pixels = []
 
 for pos in positions:
@@ -156,9 +155,6 @@ for cent in centers:
     outF.write("\n")
 
 outF.close()
-
-im = Image.open(folder + '/' + 'NP28463-228r.jpg')
-recolor(im, centers)
 
 '''
 # read centers of clusters from fle
@@ -182,4 +178,3 @@ if not os.path.exists(recolor_dir[0:-1]):
 for file in os.listdir(folder):
     im = Image.open(folder + '/' + file)
     recolor(im, centers, recolor_dir, file)
-
