@@ -1,13 +1,39 @@
 import numpy as np
+from numpy import zeros
 import os
+import math
 from PIL import Image
 from colorsys import hsv_to_rgb
 
 def relu(x):
     return max(0,x)
 
-def view3():
-    print 'testing'
+def color_cross_entropy(predicted_color, actual_color):
+    pos = -1
+    i = -1
+    # only one position in vector will be a 1, all others will be 0
+    for p in actual_color:
+        i += 1
+        if p == 1:
+            pos = i
+            break
+
+    return -1 * math.log(predicted_color[pos])
+
+
+# returns one hot label for color in palette
+def one_hot(color, color_palette):
+    i = -1
+    for c in color_palette:
+        i += 1
+        if c == color:
+            label = zeros(len(color_palette))
+            label[i] = 1
+            return label
+    
+    return 'error'
+
+
 
 '''
 #create a dim x dim size image
@@ -26,7 +52,7 @@ img = Image.frombytes('RGB', (dim, dim), colors)
 img.show()
 img.save('hues.png')
 '''
-
+'''
 folder = ''
 #for file in os.listdir(folder):
 for x in range(0, 3):
@@ -51,3 +77,14 @@ for x in range(0, 3):
                 for j in range(0, 3):
                     array[i,j] = red[i,j]
     break
+'''
+
+color = 5
+color_palette = [1,2,3,4,5,6,7]
+label = one_hot(color, color_palette)
+
+a = np.array([.02, .30, .45, .00, .25, .05, .00])#np.random.rand(len(color_palette))
+print 'label: ' + str(label)
+print 'a: ' + str(a)
+
+print '\ncross-entropy: ' + str( color_cross_entropy(a, label))
