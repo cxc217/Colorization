@@ -8,6 +8,14 @@ from colorsys import hsv_to_rgb
 def relu(x):
     return max(0,x)
 
+def derv_relu(x):
+    if x > 0:
+        return 1
+    elif x < 0:
+        return 0
+    else:
+        return 0
+
 def color_cross_entropy(predicted_color, actual_color):
     pos = -1
     i = -1
