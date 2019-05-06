@@ -23,7 +23,7 @@ def load():
         # turn image to array
         pixels = img_to_arr(im)
         npPixels = np.asarray(pixels)
-        npPixels.reshape(width, height,3)
+        npPixels = npPixels.reshape(height, width,3)
         if count <= 700:
             training_img.append(npPixels)
         else:
@@ -43,7 +43,7 @@ def load():
         # turn image to array
         pixels = img_to_arr(im)
         npPixels = np.asarray(pixels)
-        npPixels.reshape(width, height,3)
+        npPixels = npPixels.reshape(height, width,3)
         if count <= 700:
             training_lab.append(npPixels)
         else:
@@ -55,7 +55,6 @@ def load():
 
 # Load Data
 x_train, y_train, x_test, y_test = load()
-
 x_train = (x_train/255.0).astype(float)
 x_test = (x_test/255.0).astype(float)
 y_train = (y_train/255.0).astype(float)

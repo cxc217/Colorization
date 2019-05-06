@@ -9,7 +9,7 @@ def img_to_arr(img):
 
 # change RBG array to gray scale array
 def rgbToGray(pixels):
-    gray_arr = [[0, 0, 0] for x in range(len(pixels))]
+    gray_arr = [[0,0,0] for x in range(len(pixels))]
     for i in range(0, len(pixels)):
         gray_arr[i][0] = 0.21*pixels[i][0] + 0.72*pixels[i][1] + 0.07*pixels[i][2]
         gray_arr[i][1] = gray_arr[i][0]
