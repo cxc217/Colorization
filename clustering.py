@@ -39,13 +39,14 @@ def find_clusters(data):
     print("\nThe total number of data instances is: " + str(len(data)))
     print("The total number of iterations necessary is: " + str(iterations))
     print("\nThe means of each cluster are: " + str(centers))
+    '''
     print("\nThe clusters are as follows:")
     for cluster in clusters:
         print("\nCluster with a size of " + str(len(cluster)) + " starts here:")
         print(np.array(cluster).tolist())
         print("Cluster ends here.")
-    
-    # centers can be the 
+    '''
+    # centers can be the k distinct colors 
     return centers
 
 
