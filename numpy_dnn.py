@@ -9,7 +9,7 @@ from pre import rgbToGray
 
 
 def load():
-    origin_image = 'images'
+    origin_image = 'recolor_images'
     pic = {}
     #get training and test labels
     training_img = []
