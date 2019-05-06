@@ -4,12 +4,12 @@ import random
 import os
 from PIL import Image
 
-MAX_ITERATIONS = 50
+MAX_ITERATIONS = 5
 
 def find_clusters(data):
     iterations = 0
    
-    num_clusters = np.random.randint(low=30, high=50, size=1)
+    num_clusters = 50# np.random.randint(low=30, high=50, size=1)
     print 'num_clusters: ' + str(num_clusters)
     
     previous_centers = []
@@ -18,7 +18,7 @@ def find_clusters(data):
     while not (converged(previous_centers, centers, iterations)):
         iterations += 1
         #if iterations % 50 == 0:
-        print 'iterations: ' + str(iterations)
+        print 'iteration: ' + str(iterations)
     
         clusters = [[] for i in range(num_clusters)]
         
@@ -33,6 +33,11 @@ def find_clusters(data):
             #previous_centers[index] = centers[index]
             previous_centers.append(centers[index])
             centers[index] = np.mean(cluster, axis=0).tolist()
+            r,g,b = centers[index]
+            r = int(r)
+            g = int(g)
+            b = int(b)
+            centers[index] = (r,g,b)
             index += 1
 
 
@@ -65,7 +70,7 @@ def pick_centers(data, num_clusters):
     return arr
 
 def converged(previous_centers, centers, iterations):
-    if iterations > MAX_ITERATIONS:
+    if iterations >= MAX_ITERATIONS:
         return True
     return previous_centers == centers
 
@@ -89,6 +94,39 @@ def find_closest_cluster(data, centers, clusters):
     
     return clusters
 
+# changes original picture colors to the ones found in clustering
+def recolor(img, centers):
+    size = img.size
+    mode = img.mode
+    
+    img_data = list(img.getdata())
+    
+    for i in range(0, len(img_data)):
+        (r,g,b) = img_data[i]
+        #replace rgb with values from centers
+        shortest_dist = 999999999
+        shortest_val = (0,0,0)
+        for cent in centers:
+            dist = distance((r,g,b), cent)
+            if dist <= shortest_dist:
+                shortest_dist = dist
+                shortest_val = cent
+
+        img_data[i] = shortest_val
+
+    img2 = Image.new(mode, size)
+    img2.putdata(img_data)
+    
+    img2_data = list(img2.getdata())
+    
+    '''
+    mat = np.reshape(img, (height, width))
+    new_img = Image.fromarray(np.uint8(mat) , 'RGB')
+    '''
+    img2.save('000_new.jpg')
+
+    return img2
+
 # generate 5 random indexes from folder
 def Rand(folder, num):
     start = 0
@@ -100,6 +138,8 @@ def Rand(folder, num):
 
 
 folder = 'images'
+# write centers of clusters to file so we dont have to do this everytime
+'''
 filenames = os.listdir(folder)
 
 # get 3 random pictures to use for clustering
@@ -111,5 +151,32 @@ for pos in positions:
     im = Image.open(folder + '/' + filenames[pos])
     pixels.extend(list(im.getdata()))
 
-find_clusters(pixels)
+centers = find_clusters(pixels)
+
+outF = open("centers.txt", "w")
+for cent in centers:
+    outF.write(str(cent))
+    outF.write("\n")
+
+outF.close()
+
+im = Image.open(folder + '/' + 'NP28463-228r.jpg')
+recolor(im, centers)
+
+'''
+# read centers of clusters from fle
+f1 = open('centers.txt', 'r')
+lines = f1.readlines()
+
+centers = []
+for line in lines:
+    line = line.replace('[', '').replace(']','').replace('\n','').replace('(','').replace(')','')
+    line = line.split(',')
+    r = int(line[0])
+    g = int(line[1])
+    b = int(line[2])
+    centers.append((r,g,b))
+    
+im = Image.open(folder + '/' + 'NP28463-228r.jpg')
+recolor(im, centers)
 
