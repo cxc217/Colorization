@@ -9,7 +9,7 @@ from pre import rgbToGray
 
 
 def load():
-    origin_image = 'recolor_images'
+    origin_image = 'images'
     pic = {}
     #get training and test labels
     training_img = []
@@ -44,7 +44,7 @@ def load():
         #get gray scale colors of the padded image
         graPixels = npGray_Pixels.reshape(new_height,new_width,3)
        
-        if count <= 0.9*img_nums:
+        if count <= 0.9*(img_nums-1) :
             training_img.append(graPixels)
             training_lab.append(oriPixels)
         else:
@@ -58,10 +58,10 @@ def load():
 
     return pic["training_images"], pic["training_labels"], pic["test_images"], pic["test_labels"]
 
-# Load Data
+# Load Data: x - gray image y - original image
 x_train, y_train, x_test, y_test = load()
-print(x_train[0])
 x_train = (x_train/255.0).astype(float)
+print(x_test[0])
 x_test = (x_test/255.0).astype(float)
 y_train = (y_train/255.0).astype(float)
 y_test = (y_test/255.0).astype(float)
