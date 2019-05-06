@@ -5,37 +5,21 @@ import time
 import os
 from PIL import Image
 from pre import img_to_arr
-from pre import arr_to_img
+from pre import rgbToGray
 
 
 def load():
-    gray_image = 'gray_images'
     origin_image = 'images'
     pic = {}
-    #get training and test data
+    #get training and test labels
     training_img = []
     test_img = []
-    count = 0 #count 700 image for training img, the other is test.
-    for file in os.listdir(gray_image):
-        # loading image
-        im = Image.open(gray_image + '/' + file)
-        width, height = im.size
-        # turn image to array
-        pixels = img_to_arr(im)
-        npPixels = np.asarray(pixels)
-        npPixels = npPixels.reshape(height, width,3)
-        if count <= 700:
-            training_img.append(npPixels)
-        else:
-            test_img.append(npPixels)
-        count += 1
-    pic["training_images"] = np.asarray(training_img)
-    pic["test_images"] = np.asarray(test_img)
-    
-    #get training and test labels
     training_lab = []
     test_lab = []
-    count = 0 #count 700 image for training lab, the other is test.
+    img_nums = len([file for file in os.listdir(origin_image)])
+    #print(img_nums)
+    
+    count = 0 #count 90% images for training, the other is test.
     for file in os.listdir(origin_image):
         # loading image
         im = Image.open(origin_image + '/' + file)
@@ -43,18 +27,40 @@ def load():
         # turn image to array
         pixels = img_to_arr(im)
         npPixels = np.asarray(pixels)
-        npPixels = npPixels.reshape(height, width,3)
-        if count <= 700:
-            training_lab.append(npPixels)
+        #get original colors of the image, used for comparison with generated color
+        oriPixels = npPixels.reshape(height, width,3)
+        
+        # padding image
+        new_im = Image.new("RGB", (width+2, height+2), (0,0,0))
+        new_im.paste(im, (1,1))
+        new_width, new_height = new_im.size
+        #new_im.show()
+        
+        # turn padded image to array
+        pad_pixels = img_to_arr(new_im)
+        # transform array with rbg to gray scale
+        gray_pixels = rgbToGray(pad_pixels)
+        npGray_Pixels = np.asarray(gray_pixels)
+        #get gray scale colors of the padded image
+        graPixels = npGray_Pixels.reshape(new_height,new_width,3)
+       
+        if count <= 0.9*img_nums:
+            training_img.append(graPixels)
+            training_lab.append(oriPixels)
         else:
-            test_lab.append(npPixels)
+            test_img.append(graPixels)
+            test_lab.append(oriPixels)
         count += 1
+    pic["training_images"] = np.asarray(training_img)
+    pic["test_images"] = np.asarray(test_img)
     pic["training_labels"] = np.asarray(training_lab)
     pic["test_labels"] = np.asarray(test_lab)
+
     return pic["training_images"], pic["training_labels"], pic["test_images"], pic["test_labels"]
 
 # Load Data
 x_train, y_train, x_test, y_test = load()
+print(x_train[0])
 x_train = (x_train/255.0).astype(float)
 x_test = (x_test/255.0).astype(float)
 y_train = (y_train/255.0).astype(float)
@@ -85,39 +91,19 @@ def conv_(img, conv_filter):
     return final_result
 
 # Define convolution layer
-def c_forward(z, W, b):
-    if len(z.shape) > 2 or len(W.shape) > 3: # Check if number of image channels matches the filter depth.
-        if z.shape[-1] != W.shape[-1]:
-            print("Error: Number of channels in both image and filter must match.")
-            sys.exit()
-    if W.shape[1] != W.shape[2]: # Check if filter dimensions are equal.
-        print('Error: Filter must be a square matrix. I.e. number of rows and columns must match.')
-        sys.exit()
-    if W.shape[1]%2==0: # Check if filter diemnsions are odd.
-        print('Error: Filter must have an odd size. I.e. number of rows and columns must be odd.')
-        sys.exit()
+def c_forward(z, W):
     # An empty feature map to hold the output of convolving the filter(s) with the image.
-    feature_maps = numpy.zeros((z.shape[0]-W.shape[1]+1,
-                            z.shape[1]-W.shape[1]+1,
-                            W.shape[0]))
+    feature_maps = numpy.zeros((z.shape[0]-W.shape[1]+1, z.shape[1]-W.shape[1]+1, W.shape[0]))
 
     # Convolving the image by the filter(s).
     for filter_num in range(W.shape[0]):
         print("Filter ", filter_num + 1)
-        curr_filter = conv_filter[filter_num, :] # getting a filter from the bank.
-        """
-        Checking if there are mutliple channels for the single filter.
-        If so, then each channel will convolve the image.
-        The result of all convolutions are summed to return a single feature map.
-        """
-        if len(curr_filter.shape) > 2:
-            conv_map = conv_(img[:, :, 0], curr_filter[:, :, 0]) # Array holding the sum of all feature maps.
-            for ch_num in range(1, curr_filter.shape[-1]): # Convolving each channel with the image and summing the results.
-                conv_map = conv_map + conv_(img[:, :, ch_num],
-                                    curr_filter[:, :, ch_num])
-        else: # There is just a single channel in the filter.
-            conv_map = conv_(img, curr_filter)
-            feature_maps[:, :, filter_num] = conv_map # Holding feature map with the current filter.
+        curr_filter = W[filter_num, :] # getting a filter from the bank.
+    
+        conv_map = conv_(z[:, :, 0], curr_filter[:, :, 0])
+        for ch_num in range(1, curr_filter.shape[-1]): # Convolving each channel with the image and summing the results.
+            conv_map = conv_map + conv_(z[:, :, ch_num], curr_filter[:, :, ch_num])
+        feature_maps[:, :, filter_num] = conv_map
     return feature_maps # Returning all feature maps.
 
 def fc_backward(next_dz, W, z):
