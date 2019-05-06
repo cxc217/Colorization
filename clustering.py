@@ -4,12 +4,12 @@ import random
 import os
 from PIL import Image
 
-MAX_ITERATIONS = 5
+MAX_ITERATIONS = 50
 
 def find_clusters(data):
     iterations = 0
    
-    num_clusters = 50# np.random.randint(low=30, high=50, size=1)
+    num_clusters = np.random.randint(low=30, high=50, size=1)
     print 'num_clusters: ' + str(num_clusters)
     
     previous_centers = []
@@ -95,7 +95,7 @@ def find_closest_cluster(data, centers, clusters):
     return clusters
 
 # changes original picture colors to the ones found in clustering
-def recolor(img, centers):
+def recolor(img, centers, dir, name):
     size = img.size
     mode = img.mode
     
@@ -118,12 +118,8 @@ def recolor(img, centers):
     img2.putdata(img_data)
     
     img2_data = list(img2.getdata())
-    
-    '''
-    mat = np.reshape(img, (height, width))
-    new_img = Image.fromarray(np.uint8(mat) , 'RGB')
-    '''
-    img2.save('000_new.jpg')
+
+    img2.save(dir + name)
 
     return img2
 
@@ -138,8 +134,9 @@ def Rand(folder, num):
 
 
 folder = 'images'
-# write centers of clusters to file so we dont have to do this everytime
 '''
+# write centers of clusters to file so we dont have to do this everytime
+
 filenames = os.listdir(folder)
 
 # get 3 random pictures to use for clustering
@@ -176,7 +173,13 @@ for line in lines:
     g = int(line[1])
     b = int(line[2])
     centers.append((r,g,b))
-    
-im = Image.open(folder + '/' + 'NP28463-228r.jpg')
-recolor(im, centers)
+
+
+recolor_dir = './recolor_images/'
+if not os.path.exists(recolor_dir[0:-1]):
+    os.makedirs(recolor_dir[0:-1])
+
+for file in os.listdir(folder):
+    im = Image.open(folder + '/' + file)
+    recolor(im, centers, recolor_dir, file)
 
