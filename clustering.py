@@ -9,15 +9,18 @@ MAX_ITERATIONS = 50
 def find_clusters(data):
     iterations = 0
    
+    # get a random number of clusters
     num_clusters = np.random.randint(low=30, high=50, size=1)
     print 'num_clusters: ' + str(num_clusters)
     
+    # we store previous centers to see if any change in centers have been made
     previous_centers = []
     centers = pick_centers(data, num_clusters)
     
+    
     while not (converged(previous_centers, centers, iterations)):
         iterations += 1
-        #if iterations % 50 == 0:
+       
         print 'iteration: ' + str(iterations)
     
         clusters = [[] for i in range(num_clusters)]
@@ -27,10 +30,7 @@ def find_clusters(data):
         
         # recalculate centers
         index = 0
-        #print 'len prv_centers: ' + str(len(previous_centers))
-        #print 'len centers: ' + str(len(centers))
         for cluster in clusters:
-            #previous_centers[index] = centers[index]
             previous_centers.append(centers[index])
             centers[index] = np.mean(cluster, axis=0).tolist()
             r,g,b = centers[index]
@@ -40,17 +40,8 @@ def find_clusters(data):
             centers[index] = (r,g,b)
             index += 1
 
-
-    print("\nThe total number of data instances is: " + str(len(data)))
-    print("The total number of iterations necessary is: " + str(iterations))
-    print("\nThe means of each cluster are: " + str(centers))
-    '''
-    print("\nThe clusters are as follows:")
-    for cluster in clusters:
-        print("\nCluster with a size of " + str(len(cluster)) + " starts here:")
-        print(np.array(cluster).tolist())
-        print("Cluster ends here.")
-    '''
+    print("\nCenters: " + str(centers))
+    
     # centers can be the k distinct colors 
     return centers
 
@@ -65,6 +56,7 @@ def distance(color1, color2):
 
 def pick_centers(data, num_clusters):
     arr = []
+    # pick values from our data as centers
     for i in range(0, num_clusters):
         arr.append(data[random.randint(0, len(data)-1)])
     return arr
@@ -75,19 +67,17 @@ def converged(previous_centers, centers, iterations):
     return previous_centers == centers
 
 def find_closest_cluster(data, centers, clusters):
-    for instance in data:
-        # Find which centroid is the closest
-        # to the given data point.
-        mu_index = min([(i[0], np.linalg.norm(distance(instance, centers[i[0]]))) \
-                        for i in enumerate(centers)], key=lambda t:t[1])[0]
+    for data_point in data:
+        # find the closest center for each data point
+        cluster_index = min( [(i[0], np.linalg.norm(distance(data_point, centers[i[0]]))) for i in enumerate(centers)], key=lambda t:t[1])[0]
+       
+        # append data_point to cluster, if cluster is empty create list with data_point
         try:
-            clusters[mu_index].append(instance)
+            clusters[cluster_index].append(data_point)
         except KeyError:
-            clusters[mu_index] = [instance]
+            clusters[cluster_index] = [data_point]
 
-    # If any cluster is empty then assign one point
-    # from data set randomly so as to not have empty
-    # clusters and 0 means.
+    # Randomly add a datapoint to cluster if it is empty
     for cluster in clusters:
         if not cluster:
             cluster.append(data[random.randint(0, len(data)-1)])
@@ -123,7 +113,7 @@ def recolor(img, centers, dir, name):
 
     return img2
 
-# generate 5 random indexes from folder
+# generate random indexes from folder
 def Rand(folder, num):
     start = 0
     end = len(os.listdir(folder))
