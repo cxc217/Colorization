@@ -61,50 +61,76 @@ def load():
 # Load Data: x - gray image y - original image
 x_train, y_train, x_test, y_test = load()
 x_train = (x_train/255.0).astype(float)
-print(x_test[0])
+#print(x_test[0])
 x_test = (x_test/255.0).astype(float)
 y_train = (y_train/255.0).astype(float)
 y_test = (y_test/255.0).astype(float)
 
+
+# img and conv_filter are all (x, y) 2-D array,
+# and conv_filter is squre matrix(x == y)
 def conv_(img, conv_filter):
-    filter_size = conv_filter.shape[1]
-    result = numpy.zeros((img.shape))
+    filter_size = conv_filter.shape[0]
+    result = np.zeros((img.shape[0]-filter_size+1, img.shape[1]-filter_size+1))
+    
     #Looping through the image to apply the convolution operation.
-    for r in numpy.uint16(numpy.arange(filter_size/2.0,
-                                       img.shape[0]-filter_size/2.0+1)):
-        for c in numpy.uint16(numpy.arange(filter_size/2.0,
-                                           img.shape[1]-filter_size/2.0+1)):
-            """
-            Getting the current region to get multiplied with the filter.
-            How to loop through the image and get the region based on
-            the image and filer sizes is the most tricky part of convolution.
-            """
-            curr_region = img[r-numpy.uint16(numpy.floor(filter_size/2.0)):r+numpy.uint16(numpy.ceil(filter_size/2.0)),
-                                  c-numpy.uint16(numpy.floor(filter_size/2.0)):c+numpy.uint16(numpy.ceil(filter_size/2.0))]
+    for r in range(img.shape[0]-filter_size+1):
+        for c in range(img.shape[1]-filter_size+1):
+            
+            curr_region = img[r:r+filter_size, c:c + filter_size]
             #Element-wise multipliplication between the current region and the filter.
             curr_result = curr_region * conv_filter
-            conv_sum = numpy.sum(curr_result) #Summing the result of multiplication.
-            result[r, c] = conv_sum #Saving the summation in the convolution layer feature map.
-            #Clipping the outliers of the result matrix.
-            final_result = result[numpy.uint16(filter_size/2.0):result.shape[0]-numpy.uint16(filter_size/2.0),
-                                  numpy.uint16(filter_size/2.0):result.shape[1]-numpy.uint16(filter_size/2.0)]
-    return final_result
+            #Summing the result of multiplication.
+            conv_sum = np.sum(curr_result)
+            #Saving the summation in the convolution layer feature map.
+            result[r, c] = conv_sum
+    return result
 
-# Define convolution layer
-def c_forward(z, W):
+# Define convolution layer with stride 1,
+# input z gotta be (x,y, channel_num)
+# filters W gotta be square-matrix, with (filter_num, x, y, channel_num) (x == y)
+# it contains multiple filters
+def conv_forward(z, W):
     # An empty feature map to hold the output of convolving the filter(s) with the image.
-    feature_maps = numpy.zeros((z.shape[0]-W.shape[1]+1, z.shape[1]-W.shape[1]+1, W.shape[0]))
+    # output matrix will be (x, y, filter_num)
+    feature_maps = np.zeros((z.shape[0]-W.shape[1]+1, z.shape[1]-W.shape[2]+1, W.shape[0]))
 
     # Convolving the image by the filter(s).
     for filter_num in range(W.shape[0]):
-        print("Filter ", filter_num + 1)
+        #print("Filter ", filter_num + 1)
         curr_filter = W[filter_num, :] # getting a filter from the bank.
     
         conv_map = conv_(z[:, :, 0], curr_filter[:, :, 0])
         for ch_num in range(1, curr_filter.shape[-1]): # Convolving each channel with the image and summing the results.
             conv_map = conv_map + conv_(z[:, :, ch_num], curr_filter[:, :, ch_num])
+        
         feature_maps[:, :, filter_num] = conv_map
+
     return feature_maps # Returning all feature maps.
+
+def conv_backward(next_dz, z, W):
+    
+    # Retrieving dimensions from next_dz's shape
+    (n_H, n_W, filter_num) = next_dz.shape
+    
+    # Initializing dX, dW with the correct shapes
+    dz = np.zeros(z.shape)
+    dW = np.zeros(W.shape)
+
+    # Looping over vertical(h) and horizontal(w) axis of the output
+    for r in range(filter_num):
+        for h in range(n_H):
+            for w in range(n_W):
+                dz[h:h+f, w:w+f] += W[r] * next_dz[h,w,r]
+                dW[r] += z[h:h+f, w:w+f] * next_dz[h,w,r]
+
+
+    return dz, dW
+
+
+# Define Fully-connected layer
+def fc_forward(z, W, b):
+    return np.dot(z, W) + b
 
 def fc_backward(next_dz, W, z):
     N = z.shape[0]
@@ -114,15 +140,9 @@ def fc_backward(next_dz, W, z):
     return dw / N, db / N, dz
 
 # Define ReLU layer as activation 
-def relu_forward(feature_map):
-    #Preparing the output of the ReLU activation function.
-    relu_out = numpy.zeros(feature_map.shape)
-    for map_num in range(feature_map.shape[-1]):
-        for r in numpy.arange(0,feature_map.shape[0]):
-            for c in numpy.arange(0, feature_map.shape[1]):
-                relu_out[r, c, map_num] = numpy.max([feature_map[r, c, map_num], 0])
-    return relu_out
-"""
+def relu_forward(z):
+    return np.maximum(0, z)
+
 def relu_backward(next_dz, z):
     dz = np.where(np.greater(z, 0), next_dz, 0)
     return dz
@@ -144,6 +164,7 @@ def MSE_loss(y_predict, y_true):
     dy = (2.0 * (y_predict - y_true))
     return loss, dy
 
+"""
 # Initialize Weights and bias same as in pytorch 
 # model size 784-200-50-10
 weights = {}
