@@ -4,10 +4,33 @@ import random
 import os
 from PIL import Image
 
-MAX_ITERATIONS = 5
+MAX_ITERATIONS = 30
 
 def calc_gray(r,g,b):
     return 0.21*r + 0.72*g + 0.07*b
+
+def find_closest_gray(data, centers):
+    i = -1
+    for data_point in data:
+        i += 1
+        
+        
+        gray = data_point
+        #gray = calc_gray(r,g,b)
+        # find the closest center for each data point
+        
+        closest_index = -1
+        val = (0,0,0)
+        smallest_dist = 999999999
+        for c in centers:
+            (r,g,b, gr) = c
+            if smallest_dist > (gray - g)**2 :
+                val = (r,g,b)
+                smallest_dist = (gray - g)**2
+        data[i] = val
+    
+    return data
+
 
 def find_clusters(data, num_clusters):
     iterations = 0
@@ -128,6 +151,12 @@ def Rand(folder, num):
         res.append(random.randint(start, end))
     return res
 
+# transform from array back to image
+def arr_to_img(arr, img_name, width, height):
+    mat = np.reshape(arr, (height, width, 3))
+    img = Image.fromarray(np.uint8(mat) , 'RGB')
+    img.save(img_name + '_colored.jpg')
+    img.show()
 
 def calc_error(centers):
     og_folder = 'images'
@@ -163,7 +192,7 @@ folder = 'images'
 filenames = os.listdir(folder)
 
 # get 2 random pictures to use for clustering
-positions = Rand(folder, 1)
+positions = Rand(folder, 5)
 pixels = []
 
 for pos in positions:
@@ -177,7 +206,19 @@ for i in range(len(pixels)):
     pixels[i] = (r,g,b,gray)
 
 
-centers = find_clusters(pixels, 9)
+centers = find_clusters(pixels, 20)
+
+folder = 'gray_images'
+for file in os.listdir(folder):
+    im = Image.open(folder + '/' + file)
+    width, height = 182, 302
+    pixels = list(im.getdata())
+    
+    new_pixels = find_closest_gray(pixels, centers)
+    arr_to_img(new_pixels, file, width, height)
+
+
+'''
 i = 0
 for num_clusters in [200]:
     i += 1
@@ -215,3 +256,4 @@ for file in os.listdir(folder):
     im = Image.open(folder + '/' + file)
     recolor(im, centers, recolor_dir, file)
 
+'''
